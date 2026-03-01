@@ -67,62 +67,76 @@ async function directusFetch<T>(
   }
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function mapProduct(raw: any): Product {
+/** Raw record from Directus REST API */
+type DirectusRecord = Record<string, unknown>;
+
+function str(v: unknown, fallback = ""): string {
+  return typeof v === "string" ? v : fallback;
+}
+function num(v: unknown, fallback = 0): number {
+  return typeof v === "number" ? v : fallback;
+}
+function bool(v: unknown): boolean {
+  return v === true;
+}
+function arr(v: unknown): string[] {
+  return Array.isArray(v) ? (v as string[]) : [];
+}
+
+function mapProduct(raw: DirectusRecord): Product {
   return {
-    id: raw.id,
-    name: raw.name,
-    slug: raw.slug,
-    description_short: raw.description_short ?? "",
-    ingredients: raw.ingredients ?? [],
-    price_cents: raw.price_cents,
-    image: raw.image ? assetUrl(raw.image, { width: 600, fit: "cover" }) : "/images/placeholder.svg",
-    category: raw.category,
-    badge: raw.badge ?? undefined,
-    active: raw.active,
-    is_popular: raw.is_popular,
-    tags: raw.tags ?? [],
+    id: str(raw.id),
+    name: str(raw.name),
+    slug: str(raw.slug),
+    description_short: str(raw.description_short),
+    ingredients: arr(raw.ingredients),
+    price_cents: num(raw.price_cents),
+    image: raw.image ? assetUrl(str(raw.image), { width: 600, fit: "cover" }) : "/images/placeholder.svg",
+    category: str(raw.category),
+    badge: raw.badge ? str(raw.badge) : undefined,
+    active: bool(raw.active),
+    is_popular: bool(raw.is_popular),
+    tags: arr(raw.tags),
   };
 }
 
-function mapCategory(raw: any): Category {
+function mapCategory(raw: DirectusRecord): Category {
   return {
-    id: raw.id,
-    name: raw.name,
-    slug: raw.slug,
-    order: raw.order,
-    active: raw.active,
-    icon: raw.icon ?? undefined,
+    id: str(raw.id),
+    name: str(raw.name),
+    slug: str(raw.slug),
+    order: num(raw.order),
+    active: bool(raw.active),
+    icon: raw.icon ? str(raw.icon) : undefined,
   };
 }
 
-function mapHeroSlide(raw: any): HeroSlide {
+function mapHeroSlide(raw: DirectusRecord): HeroSlide {
   return {
-    id: raw.id,
-    title: raw.title,
-    subtitle: raw.subtitle ?? null,
-    image: raw.image ? assetUrl(raw.image, { width: 1200, fit: "cover" }) : "/images/placeholder.svg",
-    badge: raw.badge ?? null,
-    price_cents: raw.price_cents ?? null,
-    cta_label: raw.cta_label ?? "Commander",
-    cta_target: raw.cta_target ?? "/go?trigger=hero_cta",
-    active: raw.active,
-    order: raw.order,
+    id: str(raw.id),
+    title: str(raw.title),
+    subtitle: raw.subtitle ? str(raw.subtitle) : null,
+    image: raw.image ? assetUrl(str(raw.image), { width: 1200, fit: "cover" }) : "/images/placeholder.svg",
+    badge: raw.badge ? str(raw.badge) : null,
+    price_cents: typeof raw.price_cents === "number" ? raw.price_cents : null,
+    cta_label: str(raw.cta_label, "Commander"),
+    cta_target: str(raw.cta_target, "/go?trigger=hero_cta"),
+    active: bool(raw.active),
+    order: num(raw.order),
   };
 }
 
-function mapOffer(raw: any): Offer {
+function mapOffer(raw: DirectusRecord): Offer {
   return {
-    id: raw.id,
-    title: raw.title,
-    content: raw.content ?? "",
-    image: raw.image ? assetUrl(raw.image, { width: 800, fit: "cover" }) : null,
-    start_at: raw.start_at ?? null,
-    end_at: raw.end_at ?? null,
-    active: raw.active,
+    id: str(raw.id),
+    title: str(raw.title),
+    content: str(raw.content),
+    image: raw.image ? assetUrl(str(raw.image), { width: 800, fit: "cover" }) : null,
+    start_at: raw.start_at ? str(raw.start_at) : null,
+    end_at: raw.end_at ? str(raw.end_at) : null,
+    active: bool(raw.active),
   };
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /** Filter offers by active + date window */
 function filterActiveOffers(offers: Offer[]): Offer[] {
@@ -137,7 +151,7 @@ function filterActiveOffers(offers: Offer[]): Offer[] {
 
 class DirectusRepository implements DataRepository {
   async getHomeHeroSlides(): Promise<HeroSlide[]> {
-    const raw = await directusFetch<any[]>(
+    const raw = await directusFetch<DirectusRecord[]>(
       "/items/home_hero_slides?filter[active][_eq]=true&sort=order",
       REVALIDATE.home,
     );
@@ -145,7 +159,7 @@ class DirectusRepository implements DataRepository {
   }
 
   async getCategories(): Promise<Category[]> {
-    const raw = await directusFetch<any[]>(
+    const raw = await directusFetch<DirectusRecord[]>(
       "/items/categories?filter[active][_eq]=true&sort=order",
       REVALIDATE.menu,
     );
@@ -153,7 +167,7 @@ class DirectusRepository implements DataRepository {
   }
 
   async getProducts(): Promise<Product[]> {
-    const raw = await directusFetch<any[]>(
+    const raw = await directusFetch<DirectusRecord[]>(
       "/items/products?filter[active][_eq]=true&limit=-1",
       REVALIDATE.menu,
     );
@@ -161,7 +175,7 @@ class DirectusRepository implements DataRepository {
   }
 
   async getPopularProducts(): Promise<Product[]> {
-    const raw = await directusFetch<any[]>(
+    const raw = await directusFetch<DirectusRecord[]>(
       "/items/products?filter[active][_eq]=true&filter[is_popular][_eq]=true&limit=-1",
       REVALIDATE.menu,
     );
@@ -169,7 +183,7 @@ class DirectusRepository implements DataRepository {
   }
 
   async getOffers(): Promise<Offer[]> {
-    const raw = await directusFetch<any[]>(
+    const raw = await directusFetch<DirectusRecord[]>(
       "/items/offers?filter[active][_eq]=true",
       REVALIDATE.offers,
     );
