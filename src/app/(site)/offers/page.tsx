@@ -12,11 +12,15 @@ export default function OffersPage() {
   useEffect(() => {
     track({ name: "view_offers" });
     async function load() {
-      const data = await withFallback(
-        () => repo.getOffers(),
-        () => mockRepo.getOffers(),
-      );
-      setOffers(data);
+      try {
+        const data = await withFallback(
+          () => repo.getOffers(),
+          () => mockRepo.getOffers(),
+        );
+        setOffers(data);
+      } catch (err) {
+        console.error("[Offers] Failed to load data:", err);
+      }
     }
     load();
   }, []);

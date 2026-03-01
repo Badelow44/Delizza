@@ -6,7 +6,7 @@ import Chip from "@/components/ui/Chip";
 import ProductCard from "@/components/ui/ProductCard";
 import SectionHeader from "@/components/ui/SectionHeader";
 import type { Product, Category } from "@/types";
-import { repo, withFallback, mockRepo } from "@/data/repository";
+import { repo, withFallback, mockRepo, POPULAR_CATEGORY } from "@/data/repository";
 import { track } from "@/analytics";
 
 export default function MenuPage() {
@@ -18,12 +18,16 @@ export default function MenuPage() {
   useEffect(() => {
     track({ name: "view_menu" });
     async function load() {
-      const [cats, prods] = await Promise.all([
-        withFallback(() => repo.getCategories(), () => mockRepo.getCategories()),
-        withFallback(() => repo.getProducts(), () => mockRepo.getProducts()),
-      ]);
-      setCategories([{ id: "popular", name: "Populaire", slug: "populaire", order: -1, active: true, icon: "🔥" }, ...cats]);
-      setProducts(prods);
+      try {
+        const [cats, prods] = await Promise.all([
+          withFallback(() => repo.getCategories(), () => mockRepo.getCategories()),
+          withFallback(() => repo.getProducts(), () => mockRepo.getProducts()),
+        ]);
+        setCategories([POPULAR_CATEGORY, ...cats]);
+        setProducts(prods);
+      } catch (err) {
+        console.error("[Menu] Failed to load data:", err);
+      }
     }
     load();
   }, []);

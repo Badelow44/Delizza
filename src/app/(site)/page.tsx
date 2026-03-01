@@ -8,7 +8,7 @@ import Chip from "@/components/ui/Chip";
 import SectionHeader from "@/components/ui/SectionHeader";
 import ProductCard from "@/components/ui/ProductCard";
 import type { Product, Category, HeroSlide } from "@/types";
-import { repo, withFallback, mockRepo } from "@/data/repository";
+import { repo, withFallback, mockRepo, POPULAR_CATEGORY } from "@/data/repository";
 import Link from "next/link";
 import { buildGoUrl } from "@/lib/redirect";
 import { track } from "@/analytics";
@@ -24,14 +24,18 @@ export default function HomePage() {
   useEffect(() => {
     track({ name: "view_home" });
     async function load() {
-      const [slides, cats, prods] = await Promise.all([
-        withFallback(() => repo.getHomeHeroSlides(), () => mockRepo.getHomeHeroSlides()),
-        withFallback(() => repo.getCategories(), () => mockRepo.getCategories()),
-        withFallback(() => repo.getProducts(), () => mockRepo.getProducts()),
-      ]);
-      setHeroSlides(slides);
-      setCategories([{ id: "popular", name: "Populaire", slug: "populaire", order: -1, active: true, icon: "🔥" }, ...cats]);
-      setProducts(prods);
+      try {
+        const [slides, cats, prods] = await Promise.all([
+          withFallback(() => repo.getHomeHeroSlides(), () => mockRepo.getHomeHeroSlides()),
+          withFallback(() => repo.getCategories(), () => mockRepo.getCategories()),
+          withFallback(() => repo.getProducts(), () => mockRepo.getProducts()),
+        ]);
+        setHeroSlides(slides);
+        setCategories([POPULAR_CATEGORY, ...cats]);
+        setProducts(prods);
+      } catch (err) {
+        console.error("[Home] Failed to load data:", err);
+      }
     }
     load();
   }, []);

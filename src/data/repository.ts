@@ -11,6 +11,16 @@
 
 import type { Product, Category, HeroSlide, Offer } from "@/types";
 
+/** Virtual "Populaire" category prepended to the list from CMS */
+export const POPULAR_CATEGORY: Category = {
+  id: "popular",
+  name: "Populaire",
+  slug: "populaire",
+  order: -1,
+  active: true,
+  icon: "🔥",
+};
+
 // ---------------------------------------------------------------------------
 // Repository interface
 // ---------------------------------------------------------------------------
@@ -67,6 +77,8 @@ async function directusFetch<T>(
   }
 }
 
+const PLACEHOLDER_IMAGE = "/images/placeholder.svg";
+
 /** Raw record from Directus REST API */
 type DirectusRecord = Record<string, unknown>;
 
@@ -91,7 +103,7 @@ function mapProduct(raw: DirectusRecord): Product {
     description_short: str(raw.description_short),
     ingredients: arr(raw.ingredients),
     price_cents: num(raw.price_cents),
-    image: raw.image ? assetUrl(str(raw.image), { width: 600, fit: "cover" }) : "/images/placeholder.svg",
+    image: raw.image ? assetUrl(str(raw.image), { width: 600, fit: "cover" }) : PLACEHOLDER_IMAGE,
     category: str(raw.category),
     badge: raw.badge ? str(raw.badge) : undefined,
     active: bool(raw.active),
@@ -116,7 +128,7 @@ function mapHeroSlide(raw: DirectusRecord): HeroSlide {
     id: str(raw.id),
     title: str(raw.title),
     subtitle: raw.subtitle ? str(raw.subtitle) : null,
-    image: raw.image ? assetUrl(str(raw.image), { width: 1200, fit: "cover" }) : "/images/placeholder.svg",
+    image: raw.image ? assetUrl(str(raw.image), { width: 1200, fit: "cover" }) : PLACEHOLDER_IMAGE,
     badge: raw.badge ? str(raw.badge) : null,
     price_cents: typeof raw.price_cents === "number" ? raw.price_cents : null,
     cta_label: str(raw.cta_label, "Commander"),
