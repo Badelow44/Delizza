@@ -1,0 +1,48 @@
+import type { Offer } from "@/types";
+
+export const offers: Offer[] = [
+  {
+    id: "o1",
+    title: "Menu Duo -20%",
+    description: "2 pizzas au choix + 2 desserts pour seulement 29,90 €",
+    image: "/images/offer-duo.svg",
+    code: "DUO20",
+    discount: "-20%",
+    validUntil: "2026-04-30",
+    startAt: "2026-03-01",
+    endAt: "2026-04-30",
+  },
+  {
+    id: "o2",
+    title: "Livraison offerte",
+    description: "Livraison gratuite dès 25 € de commande",
+    image: "/images/offer-delivery.svg",
+    code: "FREELIV",
+    discount: "Gratuit",
+    validUntil: "2026-03-31",
+    startAt: "2026-02-15",
+    endAt: "2026-03-31",
+  },
+  {
+    id: "o3",
+    title: "Happy Hour -30%",
+    description: "Toutes les pizzas à -30 % entre 14h et 17h",
+    image: "/images/offer-happy.svg",
+    code: "HAPPY30",
+    discount: "-30%",
+    validUntil: "2026-05-15",
+    startAt: "2026-03-01",
+    endAt: "2026-05-15",
+  },
+  {
+    id: "o4",
+    title: "Dessert offert",
+    description: "Un tiramisu offert pour toute commande de 2 pizzas",
+    image: "/images/offer-dessert.svg",
+    code: "SWEET",
+    discount: "Offert",
+    validUntil: "2026-03-15",
+    startAt: "2026-02-01",
+    endAt: "2026-03-15",
+  },
+];
