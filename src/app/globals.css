@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #0D0D0D;
+  --color-foreground: #F5F5F5;
+}
+
+html {
+  background: #0D0D0D;
+  color: #F5F5F5;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #0D0D0D;
+  color: #F5F5F5;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Safe area support for notched devices */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Hide scrollbar for horizontal scroll areas */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
