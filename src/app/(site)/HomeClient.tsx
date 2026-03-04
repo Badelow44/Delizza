@@ -8,17 +8,17 @@ import SearchBar from "@/components/ui/SearchBar";
 import Chip from "@/components/ui/Chip";
 import SectionHeader from "@/components/ui/SectionHeader";
 import ProductCard from "@/components/ui/ProductCard";
-import type { Product, Category, HeroSlide } from "@/types";
+import type { Product, Category } from "@/types";
 import { buildGoUrl } from "@/lib/redirect";
 import { track } from "@/analytics";
 
 interface HomeClientProps {
-  heroSlides: HeroSlide[];
+  featuredProducts: Product[];
   categories: Category[];
   products: Product[];
 }
 
-export default function HomeClient({ heroSlides, categories, products }: HomeClientProps) {
+export default function HomeClient({ featuredProducts, categories, products }: HomeClientProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("popular");
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function HomeClient({ heroSlides, categories, products }: HomeCli
 
       {/* Hero carousel */}
       <section aria-label="Offres à la une">
-        <Carousel slides={heroSlides} />
+        <Carousel products={featuredProducts} />
       </section>
 
       {/* Search bar */}

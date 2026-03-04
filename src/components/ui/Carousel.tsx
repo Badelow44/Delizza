@@ -3,41 +3,41 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import type { HeroSlide } from "@/types";
+import type { Product } from "@/types";
 import { formatPrice } from "@/types";
 import { cn } from "@/lib/cn";
 import { track } from "@/analytics";
 import Link from "next/link";
 
 interface CarouselProps {
-  slides: HeroSlide[];
+  products: Product[];
 }
 
 const AUTO_PLAY_MS = 5000;
 
-export default function Carousel({ slides }: CarouselProps) {
-  const activeSlides = slides
-    .filter((s) => s.active)
-    .sort((a, b) => a.order - b.order);
+export default function Carousel({ products }: CarouselProps) {
+  const activeProducts = products.filter(
+    (p) => p.active && p.image && !p.image.includes('placeholder'),
+  );
 
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetTimer = useCallback(() => {
-    if (activeSlides.length === 0) return;
+    if (activeProducts.length === 0) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      setCurrent((p) => (p + 1) % activeSlides.length);
+      setCurrent((p) => (p + 1) % activeProducts.length);
     }, AUTO_PLAY_MS);
-  }, [activeSlides.length]);
+  }, [activeProducts.length]);
 
   useEffect(() => {
-    if (activeSlides.length === 0) return;
+    if (activeProducts.length === 0) return;
     resetTimer();
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [current, resetTimer, activeSlides.length]);
+  }, [current, resetTimer, activeProducts.length]);
 
   const goTo = useCallback(
     (idx: number) => {
@@ -47,14 +47,14 @@ export default function Carousel({ slides }: CarouselProps) {
     [resetTimer],
   );
 
-  const next = useCallback(() => goTo((current + 1) % activeSlides.length), [current, activeSlides.length, goTo]);
-  const prev = useCallback(() => goTo((current - 1 + activeSlides.length) % activeSlides.length), [current, activeSlides.length, goTo]);
+  const next = useCallback(() => goTo((current + 1) % activeProducts.length), [current, activeProducts.length, goTo]);
+  const prev = useCallback(() => goTo((current - 1 + activeProducts.length) % activeProducts.length), [current, activeProducts.length, goTo]);
 
-  const slide = activeSlides[current];
-  if (!slide) return null;
+  const product = activeProducts[current];
+  if (!product) return null;
 
   const handleCtaClick = () => {
-    track({ name: "click_hero_cta", payload: { slideId: slide.id } });
+    track({ name: "click_hero_cta", payload: { slideId: product.id } });
   };
 
   return (
@@ -68,7 +68,7 @@ export default function Carousel({ slides }: CarouselProps) {
       <div className="relative aspect-[16/10]">
         <AnimatePresence mode="wait">
           <motion.div
-            key={slide.id}
+            key={product.id}
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
@@ -76,11 +76,11 @@ export default function Carousel({ slides }: CarouselProps) {
             className="absolute inset-0"
             role="group"
             aria-roledescription="slide"
-            aria-label={`${current + 1} sur ${activeSlides.length}: ${slide.title}`}
+            aria-label={`${current + 1} sur ${activeProducts.length}: ${product.name}`}
           >
             <Image
-              src={slide.image}
-              alt={slide.title}
+              src={product.image}
+              alt={product.name}
               fill
               sizes="(max-width: 768px) 100vw, 800px"
               className="object-cover"
@@ -92,16 +92,16 @@ export default function Carousel({ slides }: CarouselProps) {
         </AnimatePresence>
 
         {/* Badge */}
-        {slide.badge && (
+        {product.badge && (
           <span className="absolute top-3 left-3 z-10 rounded-full bg-gradient-to-br from-[#D4A053] to-[#E8C078] px-3 py-1 text-[11px] font-bold text-[#0D0D0D] shadow-[0_2px_8px_rgba(212,160,83,0.4)]">
-            {slide.badge}
+            {product.badge}
           </span>
         )}
 
         {/* Price pill */}
-        {slide.price_cents != null && (
+        {product.price_cents > 0 && (
           <span className="absolute top-3 right-3 z-10 rounded-full bg-[#0D0D0D]/70 backdrop-blur-sm border border-[#D4A053]/20 px-3 py-1 text-[13px] font-bold text-[#D4A053]">
-            {formatPrice(slide.price_cents)}&nbsp;€
+            {formatPrice(product.price_cents)}&nbsp;€
           </span>
         )}
       </div>
@@ -109,15 +109,15 @@ export default function Carousel({ slides }: CarouselProps) {
       {/* Bottom content */}
       <div className="px-4 pb-4 pt-3">
         <p className="text-[11px] font-medium uppercase tracking-wider text-[#D4A053]">
-          {slide.subtitle}
+          {product.description_short}
         </p>
         <h2 className="mt-1 text-[22px] font-bold text-[#F5F5F5]">
-          {slide.title}
+          {product.name}
         </h2>
 
         <div className="mt-3 flex items-center justify-between">
           <Link
-            href={slide.cta_target}
+            href="/download"
             onClick={handleCtaClick}
             className={cn(
               "inline-flex items-center justify-center rounded-[18px] px-6 py-2.5",
@@ -126,14 +126,14 @@ export default function Carousel({ slides }: CarouselProps) {
               "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4A053]",
             )}
           >
-            {slide.cta_label}
+            Commander
           </Link>
 
           {/* Dots */}
           <div className="flex gap-1.5" role="tablist" aria-label="Slides">
-            {activeSlides.map((s, i) => (
+            {activeProducts.map((p, i) => (
               <button
-                key={s.id}
+                key={p.id}
                 onClick={() => goTo(i)}
                 role="tab"
                 aria-selected={i === current}

@@ -13,6 +13,7 @@
  */
 
 import type { Product, Category, HeroSlide, Offer } from "@/types";
+// HeroSlide kept for DirectusRepository which still maps hero_slides from CMS
 
 /** Virtual "Populaire" category prepended to the list from CMS */
 export const POPULAR_CATEGORY: Category = {
@@ -30,10 +31,35 @@ export const POPULAR_CATEGORY: Category = {
 
 export interface DataRepository {
   getHomeHeroSlides(): Promise<HeroSlide[]>;
+  getFeaturedProducts(): Promise<Product[]>;
   getCategories(): Promise<Category[]>;
   getProducts(): Promise<Product[]>;
   getPopularProducts(): Promise<Product[]>;
   getOffers(): Promise<Offer[]>;
+}
+
+// ---------------------------------------------------------------------------
+// Shared helper
+// ---------------------------------------------------------------------------
+
+/** Build the featured product list: badge+image first, then image-only, max 5 */
+export function buildFeaturedProducts(all: Product[]): Product[] {
+  const seenIds = new Set<string>();
+  const badged = all.filter(p => p.badge && p.image && !p.image.includes('placeholder'));
+  const withImage = all.filter(p => p.image && !p.image.includes('placeholder'));
+  const featured: Product[] = [];
+  for (const p of badged) {
+    seenIds.add(p.id);
+    featured.push(p);
+    if (featured.length >= 5) return featured;
+  }
+  for (const p of withImage) {
+    if (!seenIds.has(p.id)) {
+      featured.push(p);
+      if (featured.length >= 5) break;
+    }
+  }
+  return featured;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +199,10 @@ class DirectusRepository implements DataRepository {
     return raw.map(mapHeroSlide);
   }
 
+  async getFeaturedProducts(): Promise<Product[]> {
+    return buildFeaturedProducts(await this.getProducts());
+  }
+
   async getCategories(): Promise<Category[]> {
     const raw = await directusFetch<DirectusRecord[]>(
       "/items/categories?filter[active][_eq]=true&sort=order",
@@ -222,6 +252,10 @@ class MockRepository implements DataRepository {
     return mockHeroSlides
       .filter((s) => s.active)
       .sort((a, b) => a.order - b.order);
+  }
+
+  async getFeaturedProducts(): Promise<Product[]> {
+    return buildFeaturedProducts(mockProducts.filter((p) => p.active));
   }
 
   async getCategories(): Promise<Category[]> {
