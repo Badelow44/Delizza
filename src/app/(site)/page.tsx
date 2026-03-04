@@ -9,15 +9,15 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [slides, cats, prods] = await Promise.all([
-    withFallback(() => repo.getHomeHeroSlides(), () => mockRepo.getHomeHeroSlides()),
+  const [featuredProducts, cats, prods] = await Promise.all([
+    withFallback(() => repo.getFeaturedProducts(), () => mockRepo.getFeaturedProducts()),
     withFallback(() => repo.getCategories(), () => mockRepo.getCategories()),
     withFallback(() => repo.getProducts(), () => mockRepo.getProducts()),
   ]);
 
   return (
     <HomeClient
-      heroSlides={slides}
+      featuredProducts={featuredProducts}
       categories={[POPULAR_CATEGORY, ...cats]}
       products={prods}
     />

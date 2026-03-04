@@ -11,6 +11,7 @@
 
 import type { Product, Category, HeroSlide, Offer } from "@/types";
 import type { DataRepository } from "@/data/repository";
+import { buildFeaturedProducts } from "@/data/repository";
 import { getDb, WL_APP_ID, FIREBASE_STORAGE_BUCKET } from "@/config/firebase";
 import {
   categories as mockCategories,
@@ -125,6 +126,10 @@ export class FirebaseRepository implements DataRepository {
     return mockHeroSlides
       .filter((s) => s.active)
       .sort((a, b) => a.order - b.order);
+  }
+
+  async getFeaturedProducts(): Promise<Product[]> {
+    return buildFeaturedProducts(await this.getProducts());
   }
 
   async getCategories(): Promise<Category[]> {
