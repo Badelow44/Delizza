@@ -1,6 +1,7 @@
 import BottomNav from "@/components/ui/BottomNav";
 import DesktopNav from "@/components/ui/DesktopNav";
 import AppBanner from "@/components/ui/AppBanner";
+import Footer from "@/components/ui/Footer";
 
 export default function SiteLayout({
   children,
@@ -16,6 +17,7 @@ export default function SiteLayout({
           {children}
         </main>
       </div>
+      <Footer />
       <BottomNav />
     </>
   );

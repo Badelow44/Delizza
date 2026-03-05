@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "Pizza Deli'Zza — Commandez en ligne",
@@ -31,6 +32,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {children}
+        <CookieBanner />
       </body>
     </html>
   );
