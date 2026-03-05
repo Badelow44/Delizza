@@ -313,7 +313,7 @@ export async function withFallback<T>(
   try {
     return await primary();
   } catch (err) {
-    console.warn("[CMS] Directus unavailable, using mock fallback:", err);
+    console.warn("[CMS] Primary data source unavailable, using mock fallback:", err);
     return fallback();
   }
 }
