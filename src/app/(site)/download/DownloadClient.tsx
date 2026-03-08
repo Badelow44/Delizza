@@ -25,31 +25,17 @@ function DownloadContent() {
           Deli&apos;Zza
         </h1>
         <p className="text-[15px] text-[#A0A0A0] leading-relaxed max-w-xs">
-          L&apos;application arrive bientôt. Restez connecté !
-        </p>
-        <p className="text-[13px] text-[#6B6B6B] leading-relaxed max-w-xs">
-          Téléchargez l&apos;application pour commander, suivre vos livraisons
-          et profiter d&apos;offres exclusives.
+          L&apos;application arrive bientôt&nbsp;! En attendant, commandez directement sur notre site.
         </p>
       </div>
 
-      {/* Store buttons (coming soon) */}
-      <div className="flex flex-col gap-3 w-full max-w-xs">
-        <div
-          aria-disabled="true"
-          className="flex cursor-default items-center justify-center gap-3 rounded-[18px] bg-[#1A1A1A] border border-white/10 px-6 py-4 text-[15px] font-semibold text-[#F5F5F5] opacity-50"
-        >
-          <span className="text-[24px]" aria-hidden="true">🍎</span>
-          Bientôt sur App Store
-        </div>
-        <div
-          aria-disabled="true"
-          className="flex cursor-default items-center justify-center gap-3 rounded-[18px] bg-[#1A1A1A] border border-white/10 px-6 py-4 text-[15px] font-semibold text-[#F5F5F5] opacity-50"
-        >
-          <span className="text-[24px]" aria-hidden="true">▶️</span>
-          Bientôt sur Google Play
-        </div>
-      </div>
+      {/* CTA */}
+      <Link
+        href="/menu"
+        className="inline-flex items-center justify-center rounded-[18px] bg-gradient-to-br from-[#D4A053] to-[#E8C078] px-8 py-3 text-[15px] font-semibold text-[#0D0D0D] shadow-[0_4px_20px_rgba(212,160,83,0.3)] active:scale-95 transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4A053]"
+      >
+        Commander sur le site
+      </Link>
 
       <Link href="/" className="text-[13px] text-[#D4A053] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4A053] rounded">
         ← Retour au site

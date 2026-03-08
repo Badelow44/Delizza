@@ -17,7 +17,7 @@ function GoContent() {
     track({ name: "open_go", payload: { trigger, os: platform } });
 
     if (platform === "desktop") {
-      window.location.href = `/download?from=${encodeURIComponent(trigger)}`;
+      window.location.href = `/menu`;
       return;
     }
 
@@ -29,12 +29,7 @@ function GoContent() {
     const timer = setTimeout(() => {
       if (!document.hidden) {
         const storeUrl = getStoreUrl(platform);
-        if (storeUrl.startsWith("#")) {
-          // Placeholder — go to download page instead
-          window.location.href = `/download?from=${encodeURIComponent(trigger)}`;
-        } else {
-          window.location.href = storeUrl;
-        }
+        window.location.href = storeUrl;
       }
     }, DEEP_LINK_TIMEOUT_MS);
 

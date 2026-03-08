@@ -6,6 +6,9 @@ import { isBannerDismissed, dismissBanner } from "@/lib/redirect";
 import { track } from "@/analytics";
 import Link from "next/link";
 
+// TODO: Set to true when app is published on stores
+const APP_AVAILABLE = false;
+
 const SCROLL_THRESHOLD = 0.5; // 50% of page
 const DELAY_MS = 12_000; // 12 seconds
 const BANNER_HEIGHT = 56; // approximate banner height in px
@@ -15,6 +18,7 @@ export default function AppBanner() {
   const shownRef = useRef(false);
 
   useEffect(() => {
+    if (!APP_AVAILABLE) return;
     if (isBannerDismissed()) return;
 
     const show = (reason: string) => {
@@ -49,6 +53,8 @@ export default function AppBanner() {
     setVisible(false);
     track({ name: "close_install_banner" });
   };
+
+  if (!APP_AVAILABLE) return null;
 
   return (
     <>
