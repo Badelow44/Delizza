@@ -9,7 +9,6 @@ import Chip from "@/components/ui/Chip";
 import SectionHeader from "@/components/ui/SectionHeader";
 import ProductCard from "@/components/ui/ProductCard";
 import type { Product, Category } from "@/types";
-import { buildGoUrl } from "@/lib/redirect";
 import { track } from "@/analytics";
 
 interface HomeClientProps {
@@ -109,7 +108,7 @@ export default function HomeClient({ featuredProducts, categories, products }: H
           Envie de plus ? Découvrez tout le menu
         </p>
         <Link
-          href={buildGoUrl("see_menu")}
+          href="/menu"
           className="mt-3 inline-flex items-center justify-center rounded-[18px] bg-gradient-to-br from-[#D4A053] to-[#E8C078] px-6 py-2.5 text-[15px] font-semibold text-[#0D0D0D] shadow-[0_4px_20px_rgba(212,160,83,0.3)] active:scale-95 transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4A053]"
         >
           Voir le menu complet

@@ -1,7 +1,7 @@
 /**
  * Smart redirect helpers.
- * For now all CTAs redirect to /go?trigger=<action> which itself
- * redirects to /download. Deep-link URLs are placeholders.
+ * CTAs redirect to /go?trigger=<action> which itself attempts a deep link,
+ * then falls back to /menu. Deep-link URLs are placeholders until app is published.
  */
 
 import type { Platform } from "@/types";
@@ -12,11 +12,11 @@ const DISMISS_DAYS = 7;
 /** Deep link scheme */
 const DEEP_LINK_SCHEME = "com.wlhorizon.delizza://";
 
-/** Store URLs — all point to /download (coming soon) */
+/** Store URLs — point to /menu until app is published on stores */
 const STORE_URLS: Record<Platform, string> = {
-  ios: "/download",
-  android: "/download",
-  desktop: "/download",
+  ios: "/menu",
+  android: "/menu",
+  desktop: "/menu",
 };
 
 export function buildGoUrl(

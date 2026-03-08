@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Offer } from "@/types";
 import { track } from "@/analytics";
 
@@ -58,9 +59,15 @@ export default function OffersClient({ offers }: OffersClientProps) {
           </article>
         ))}
         {offers.length === 0 && (
-          <p className="py-10 text-center text-[#6B6B6B]">
-            Aucune offre pour le moment
-          </p>
+          <div className="col-span-full flex flex-col items-center gap-4 py-10 text-center">
+            <p className="text-[#6B6B6B]">Aucune offre en cours</p>
+            <Link
+              href="/menu"
+              className="inline-flex items-center justify-center rounded-[18px] bg-gradient-to-br from-[#D4A053] to-[#E8C078] px-6 py-2.5 text-[15px] font-semibold text-[#0D0D0D] shadow-[0_4px_20px_rgba(212,160,83,0.3)] active:scale-95 transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4A053]"
+            >
+              Voir le menu
+            </Link>
+          </div>
         )}
       </div>
     </div>
