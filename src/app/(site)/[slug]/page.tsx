@@ -100,7 +100,7 @@ export default async function CommunePage({ params }: PageProps) {
             {!BUSINESS.telephone.startsWith("TODO") && (
               <p>
                 Vous pouvez également commander par téléphone au{" "}
-                <a href={`tel:${BUSINESS.telephone}`} className="text-[#D4A053]">{BUSINESS.telephone}</a> pendant nos heures
+                <a href={`tel:${BUSINESS.telephone}`} className="text-[#D4A053]" aria-label={`Appeler Pizza Deli'Zza au ${BUSINESS.telephone}`}>{BUSINESS.telephone}</a> pendant nos heures
                 d&apos;ouverture.
               </p>
             )}

@@ -92,6 +92,11 @@ export default function StripeCheckout({
   onSuccess,
   onError,
 }: StripeCheckoutProps) {
+  if (!stripePromise) {
+    onError("La configuration de paiement est manquante. Veuillez réessayer plus tard.");
+    return null;
+  }
+
   return (
     <Elements
       stripe={stripePromise}
