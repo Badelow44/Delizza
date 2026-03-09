@@ -97,11 +97,13 @@ export default async function CommunePage({ params }: PageProps) {
               et récupérez votre commande à La Varenne, prête à l&apos;heure que vous choisissez.
               C&apos;est simple, rapide et sans surprise.
             </p>
-            <p>
-              Vous pouvez également commander par téléphone au{" "}
-              <span className="text-[#D4A053]">{BUSINESS.telephone}</span> pendant nos heures
-              d&apos;ouverture.
-            </p>
+            {!BUSINESS.telephone.startsWith("TODO") && (
+              <p>
+                Vous pouvez également commander par téléphone au{" "}
+                <a href={`tel:${BUSINESS.telephone}`} className="text-[#D4A053]">{BUSINESS.telephone}</a> pendant nos heures
+                d&apos;ouverture.
+              </p>
+            )}
           </div>
         </section>
 

@@ -42,5 +42,5 @@ export function getClientFirestore(): Firestore {
 }
 
 export function getClientFunctions(): Functions {
-  return getFunctions(getClientApp());
+  return getFunctions(getClientApp(), "europe-west1");
 }

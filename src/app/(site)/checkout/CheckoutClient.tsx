@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import AuthGuard from "@/components/auth/AuthGuard";
@@ -244,7 +244,7 @@ function Step2Summary({
         <h2 className="text-[16px] font-bold text-[#F5F5F5]">Votre commande</h2>
         <ul className="flex flex-col gap-2">
           {items.map((item) => (
-            <li key={item.catalogItemId} className="flex justify-between items-center text-[14px]">
+            <li key={item.cartKey} className="flex justify-between items-center text-[14px]">
               <span className="text-[#F5F5F5]">
                 <span className="font-semibold text-[#D4A053]">{item.quantity}×</span>{" "}
                 {item.nameSnapshot}
@@ -355,6 +355,13 @@ export default function CheckoutClient() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to menu if cart is empty (direct navigation to /checkout)
+  useEffect(() => {
+    if (isEmpty && step === 1) {
+      router.replace("/menu");
+    }
+  }, [isEmpty, step, router]);
 
   const handleProceedToPayment = useCallback(async () => {
     if (!user) return;
