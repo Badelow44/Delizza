@@ -26,8 +26,8 @@ export const BUSINESS = {
     addressCountry: "FR",
   },
   geo: {
-    latitude: "TODO_LAT",
-    longitude: "TODO_LNG",
+    latitude: "47.3248",
+    longitude: "-1.1917",
   },
   social: {
     instagram: "TODO_INSTAGRAM",
