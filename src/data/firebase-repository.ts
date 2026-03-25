@@ -4,11 +4,13 @@
  * Collections:
  *   wl_catalog_categories  — menu categories
  *   wl_catalog_items       — menu products / items
+ *   wl_option_templates    — reusable option templates (e.g. pizza sizes)
  *
  * Hero slides and offers don't exist in WLHORIZON Firestore; they are
  * delegated to mock data (same as MockRepository).
  */
 
+import { FieldPath } from "firebase-admin/firestore";
 import type { Product, Category, HeroSlide, Offer } from "@/types";
 import type { ProductOption, OptionChoice, OptionType } from "@/types/product-options";
 import type { DataRepository } from "@/data/repository";
@@ -104,6 +106,46 @@ function parseOptions(raw: unknown): ProductOption[] {
     .sort((a, b) => a.order - b.order);
 }
 
+/** Parse appliedTemplateIds from a Firestore document field */
+function parseTemplateIds(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return (v as unknown[]).filter((id): id is string => typeof id === "string");
+}
+
+/** Convert a raw Firestore wl_option_templates document into a ProductOption */
+function mapTemplateToOption(id: string, data: FirestoreDoc, order: number): ProductOption {
+  const choices: OptionChoice[] = Array.isArray(data.choices)
+    ? (data.choices as unknown[])
+        .map((c): OptionChoice | null => {
+          if (typeof c !== "object" || c === null) return null;
+          const ch = c as Record<string, unknown>;
+          const modifier =
+            typeof ch.priceModifier === "object" && ch.priceModifier !== null
+              ? (ch.priceModifier as Record<string, unknown>)
+              : undefined;
+          return {
+            id: str(ch.id),
+            name: str(ch.name),
+            priceModifier: {
+              amountCents: typeof modifier?.amountCents === "number" ? modifier.amountCents : 0,
+              currency: str(modifier?.currency, "EUR"),
+            },
+            isActive: bool(ch.isActive, false),
+          };
+        })
+        .filter((c): c is OptionChoice => c !== null)
+        .filter((c) => c.isActive)
+    : [];
+  return {
+    id,
+    name: str(data.name),
+    type: (data.type === "single" || data.type === "multiple") ? (data.type as OptionType) : "single",
+    required: bool(data.required, false),
+    choices,
+    order,
+  };
+}
+
 /** Filter offers by active status + date window */
 function filterActiveOffers(offers: Offer[]): Offer[] {
   const now = new Date();
@@ -132,7 +174,7 @@ function mapCategory(id: string, data: FirestoreDoc): Category {
   };
 }
 
-function mapProduct(id: string, data: FirestoreDoc): Product {
+function mapProduct(id: string, data: FirestoreDoc): Product & { appliedTemplateIds: string[] } {
   // Price: prefer nested Money object, fall back to legacy flat field
   const priceObj = data.price as Record<string, unknown> | undefined;
   const priceCents =
@@ -158,6 +200,7 @@ function mapProduct(id: string, data: FirestoreDoc): Product {
     is_popular: bool(data.isPopular, false),
     tags: arr(data.tags),
     options: parseOptions(data.options),
+    appliedTemplateIds: parseTemplateIds(data.appliedTemplateIds),
   };
 }
 
@@ -195,7 +238,47 @@ export class FirebaseRepository implements DataRepository {
       .where("isActive", "==", true)
       .get();
 
-    return snap.docs.map((doc) => mapProduct(doc.id, doc.data()));
+    const rawProducts = snap.docs.map((doc) => mapProduct(doc.id, doc.data()));
+
+    // Collect all unique template IDs referenced across products
+    const allTemplateIds = [
+      ...new Set(rawProducts.flatMap((p) => p.appliedTemplateIds)),
+    ];
+
+    // Batch-fetch option templates (Firestore `in` query limit: 30 IDs per query)
+    const templateMap = new Map<string, ProductOption>();
+    if (allTemplateIds.length > 0) {
+      const db = getDb();
+      const chunks: string[][] = [];
+      for (let i = 0; i < allTemplateIds.length; i += 30) {
+        chunks.push(allTemplateIds.slice(i, i + 30));
+      }
+      const templateSnaps = await Promise.all(
+        chunks.map((chunk) =>
+          db
+            .collection("wl_option_templates")
+            .where("appId", "==", WL_APP_ID)
+            .where(FieldPath.documentId(), "in", chunk)
+            .get()
+        )
+      );
+      templateSnaps
+        .flatMap((s) => s.docs)
+        .forEach((doc, index) => {
+          templateMap.set(doc.id, mapTemplateToOption(doc.id, doc.data(), index));
+        });
+    }
+
+    // Merge template-derived options (first) with any inline options
+    return rawProducts.map(({ appliedTemplateIds, ...product }) => {
+      const templateOptions = appliedTemplateIds
+        .map((id) => templateMap.get(id))
+        .filter((opt): opt is ProductOption => opt !== undefined);
+      return {
+        ...product,
+        options: [...templateOptions, ...product.options],
+      };
+    });
   }
 
   async getPopularProducts(): Promise<Product[]> {
