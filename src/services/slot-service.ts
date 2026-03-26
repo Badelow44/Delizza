@@ -9,7 +9,7 @@
  */
 
 import { httpsCallable } from "firebase/functions";
-import { getClientFunctions } from "@/config/firebase-client";
+import { getClientFunctions, appCheckReady } from "@/config/firebase-client";
 import type { TimeSlotInfo } from "@/types/order";
 
 export type { TimeSlotInfo };
@@ -27,6 +27,18 @@ export interface GetAvailableSlotsParams {
 export async function getAvailableSlots(
   params: GetAvailableSlotsParams,
 ): Promise<TimeSlotInfo[]> {
+  if (!params.appId) {
+    console.error(
+      "[slot-service] appId is empty — NEXT_PUBLIC_WL_APP_ID is likely " +
+        "not set in environment variables.",
+    );
+    throw new Error(
+      "Configuration manquante (appId). Contactez le support.",
+    );
+  }
+
+  await appCheckReady;
+
   const functions = getClientFunctions();
   const callable = httpsCallable(functions, "getAvailableSlots");
   const result = await callable(params);

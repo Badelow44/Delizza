@@ -7,7 +7,7 @@
  */
 
 import { httpsCallable } from "firebase/functions";
-import { getClientFunctions } from "@/config/firebase-client";
+import { getClientFunctions, appCheckReady } from "@/config/firebase-client";
 import type { CartItem } from "@/types/cart";
 import type { FulfillmentData } from "@/types/order";
 
@@ -48,6 +48,7 @@ export interface CreatePaymentIntentResult {
 export async function createOrder(
   params: CreateOrderParams,
 ): Promise<CreateOrderResult> {
+  await appCheckReady;
   const functions = getClientFunctions();
   const callable = httpsCallable(functions, "createOrder");
   const idempotencyKey = `web_${params.userId}_${Date.now()}_${globalThis.crypto.randomUUID().slice(0, 8)}`;
@@ -62,6 +63,7 @@ export async function createOrder(
 export async function createPaymentIntent(
   params: CreatePaymentIntentParams,
 ): Promise<CreatePaymentIntentResult> {
+  await appCheckReady;
   const functions = getClientFunctions();
   const callable = httpsCallable(functions, "createPaymentIntent");
   const result = await callable(params);
