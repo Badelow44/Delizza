@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { createOrder, createPaymentIntent } from "@/services/order-service";
+import { getAvailableSlots } from "@/services/slot-service";
 import { formatPrice, computeTtcCents, formatTaxRate } from "@/types";
-import type { FulfillmentData } from "@/types/order";
+import type { FulfillmentData, TimeSlotInfo } from "@/types/order";
 
 // Dynamically import Stripe component to avoid SSR issues
 const StripeCheckout = dynamic(
@@ -18,33 +19,20 @@ const StripeCheckout = dynamic(
 
 const WL_APP_ID = process.env.NEXT_PUBLIC_WL_APP_ID ?? "";
 
-// ─── Time slot helpers ────────────────────────────────────────────────────────
+// ─── Date helpers ─────────────────────────────────────────────────────────────
 
-function getTimeSlots(): string[] {
-  const slots: string[] = [];
-  const now = new Date();
-  // First available slot: now + 30 min, rounded to next 15-min mark
-  const start = new Date(now.getTime() + 30 * 60 * 1000);
-  const minutes = start.getMinutes();
-  const remainder = minutes % 15;
-  if (remainder !== 0) {
-    start.setMinutes(minutes + (15 - remainder), 0, 0);
-  } else {
-    start.setSeconds(0, 0);
-  }
+function toISODate(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
 
-  // Closing at 22:00
-  const closing = new Date(start);
-  closing.setHours(22, 0, 0, 0);
+function getTodayDate(): Date {
+  return new Date();
+}
 
-  let cursor = new Date(start);
-  while (cursor <= closing) {
-    slots.push(
-      cursor.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-    );
-    cursor = new Date(cursor.getTime() + 15 * 60 * 1000);
-  }
-  return slots;
+function getTomorrowDate(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d;
 }
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
@@ -111,7 +99,38 @@ interface Step1Props {
 }
 
 function Step1Fulfillment({ state, onChange, onNext, isEmpty }: Step1Props) {
-  const slots = getTimeSlots();
+  const [selectedDate, setSelectedDate] = useState<"today" | "tomorrow">("today");
+  const [slots, setSlots] = useState<TimeSlotInfo[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+
+  const fetchSlots = useCallback(async (dateKey: "today" | "tomorrow") => {
+    setSlotsLoading(true);
+    setSlotsError(null);
+    try {
+      const date = dateKey === "today" ? getTodayDate() : getTomorrowDate();
+      const result = await getAvailableSlots({ appId: WL_APP_ID, date: toISODate(date) });
+      setSlots(result);
+    } catch (err) {
+      console.error("[slot-service] getAvailableSlots unexpected response or error:", err);
+      setSlotsError("Impossible de charger les créneaux. Veuillez réessayer.");
+      setSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  // Fetch slots when "Choisir un créneau" is selected or date changes
+  useEffect(() => {
+    if (!state.isAsap) {
+      fetchSlots(selectedDate);
+    }
+  }, [state.isAsap, selectedDate, fetchSlots]);
+
+  const handleDateChange = (dateKey: "today" | "tomorrow") => {
+    setSelectedDate(dateKey);
+    onChange({ ...state, scheduledTime: "" });
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -157,22 +176,88 @@ function Step1Fulfillment({ state, onChange, onNext, isEmpty }: Step1Props) {
         </div>
 
         {!state.isAsap && (
-          <select
-            value={state.scheduledTime}
-            onChange={(e) => onChange({ ...state, scheduledTime: e.target.value })}
-            className="w-full rounded-[14px] bg-[#252525] px-4 py-3 text-[14px] text-[#F5F5F5] border border-white/10 focus:border-[#D4A053] focus:outline-none"
-          >
-            {slots.length === 0 ? (
-              <option value="">Fermé pour aujourd&apos;hui</option>
+          <div className="flex flex-col gap-4">
+            {/* Date toggle: Today / Tomorrow */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleDateChange("today")}
+                className={`flex-1 rounded-[12px] py-2 text-[13px] font-semibold transition-colors ${
+                  selectedDate === "today"
+                    ? "bg-[#D4A053]/20 text-[#D4A053] border border-[#D4A053]/40"
+                    : "bg-[#252525] text-[#A0A0A0] border border-white/10 hover:text-[#F5F5F5]"
+                }`}
+              >
+                Aujourd&apos;hui
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDateChange("tomorrow")}
+                className={`flex-1 rounded-[12px] py-2 text-[13px] font-semibold transition-colors ${
+                  selectedDate === "tomorrow"
+                    ? "bg-[#D4A053]/20 text-[#D4A053] border border-[#D4A053]/40"
+                    : "bg-[#252525] text-[#A0A0A0] border border-white/10 hover:text-[#F5F5F5]"
+                }`}
+              >
+                Demain
+              </button>
+            </div>
+
+            {/* Slot grid */}
+            {slotsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#D4A053] border-t-transparent" />
+                <span className="ml-3 text-[13px] text-[#A0A0A0]">Chargement des créneaux…</span>
+              </div>
+            ) : slotsError ? (
+              <div className="rounded-[14px] bg-[#E74C3C]/10 border border-[#E74C3C]/30 px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-[13px] text-[#E74C3C]">{slotsError}</p>
+                <button
+                  type="button"
+                  onClick={() => fetchSlots(selectedDate)}
+                  className="text-[12px] text-[#D4A053] underline whitespace-nowrap"
+                >
+                  Réessayer
+                </button>
+              </div>
+            ) : slots.length === 0 ? (
+              <p className="text-center text-[13px] text-[#6B6B6B] py-4">Aucun créneau disponible pour ce jour.</p>
             ) : (
-              <>
-                <option value="">Choisir un créneau…</option>
-                {slots.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </>
+              <div className="grid grid-cols-3 gap-2">
+                {slots.map((slot) => {
+                  const isFull = slot.status === "full";
+                  const isLimited = slot.status === "limited";
+                  const isSelected = state.scheduledTime === slot.start;
+                  return (
+                    <button
+                      key={slot.start}
+                      type="button"
+                      disabled={isFull}
+                      onClick={() => onChange({ ...state, scheduledTime: slot.start })}
+                      className={`relative flex flex-col items-center rounded-[14px] px-2 py-3 text-[13px] font-semibold transition-colors ${
+                        isFull
+                          ? "bg-[#252525] text-[#6B6B6B] opacity-40 cursor-not-allowed"
+                          : isSelected
+                            ? "bg-gradient-to-br from-[#D4A053] to-[#E8C078] text-[#0D0D0D]"
+                            : isLimited
+                              ? "bg-[#252525] text-[#F5F5F5] border border-[#D4A053]"
+                              : "bg-[#252525] text-[#F5F5F5] border border-white/10 hover:border-[#D4A053]/50"
+                      }`}
+                    >
+                      <span>{slot.start}</span>
+                      {isFull ? (
+                        <span className="mt-0.5 text-[10px] font-normal">Complet</span>
+                      ) : isLimited ? (
+                        <span className={`mt-0.5 text-[10px] font-normal ${isSelected ? "text-[#0D0D0D]/70" : "text-[#D4A053]"}`}>
+                          Peu de places
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
             )}
-          </select>
+          </div>
         )}
       </div>
 
@@ -365,6 +450,7 @@ export default function CheckoutClient() {
       const fulfillmentData: FulfillmentData = {
         method: "clickAndCollect",
         isAsap: fulfillment.isAsap,
+        source: "web",
         ...((!fulfillment.isAsap && fulfillment.scheduledTime)
           ? { scheduledTime: fulfillment.scheduledTime }
           : {}),
@@ -398,9 +484,17 @@ export default function CheckoutClient() {
       setPaymentAmountCents(intentResult.amountCents);
       setStep(3);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Une erreur est survenue.";
-      setError(message);
+      const isResourceExhausted =
+        (err instanceof Error && err.message.includes("resource-exhausted")) ||
+        (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "functions/resource-exhausted");
+      if (isResourceExhausted) {
+        setError("Ce créneau est complet. Veuillez en choisir un autre.");
+        setStep(1);
+      } else {
+        const message =
+          err instanceof Error ? err.message : "Une erreur est survenue.";
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
