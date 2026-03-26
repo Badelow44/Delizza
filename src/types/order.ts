@@ -28,6 +28,15 @@ export interface FulfillmentData {
   [key: string]: unknown;
 }
 
+/** Mirrors the slot structure returned by the WLHORIZON `getAvailableSlots` Cloud Function */
+export interface TimeSlotInfo {
+  start: string;
+  end: string;
+  remainingUnits: number;
+  remainingOrders: number;
+  status: "available" | "limited" | "full";
+}
+
 /** Firestore timestamp — can be a Firestore Timestamp, a plain Date, or a unix millis number */
 export type FirestoreTimestamp = { toDate(): Date; seconds: number; nanoseconds: number } | Date | number | null;
 
