@@ -22,6 +22,7 @@ import { getFunctions, type Functions } from "firebase/functions";
 import {
   initializeAppCheck,
   ReCaptchaEnterpriseProvider,
+  getToken,
   type AppCheck,
 } from "firebase/app-check";
 
@@ -54,6 +55,7 @@ export function getClientFunctions(): Functions {
 }
 
 let appCheckInstance: AppCheck | null = null;
+export let appCheckReady: Promise<void> = Promise.resolve();
 
 /**
  * Initialise Firebase App Check (browser-only, idempotent).
@@ -70,24 +72,50 @@ let appCheckInstance: AppCheck | null = null;
  *      console.
  */
 export function initAppCheck(): void {
-  if (typeof window === "undefined") return; // server-side — skip
-  if (appCheckInstance) return; // already initialised
+  if (typeof window === "undefined") return;
+  if (appCheckInstance) return;
 
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
+  console.info(
+    "[AppCheck] init — hostname=%s, siteKey=%s, env=%s",
+    window.location.hostname,
+    siteKey ? `${siteKey.slice(0, 8)}…` : "MISSING",
+    process.env.NODE_ENV,
+  );
+
   if (!siteKey) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(
-        "[AppCheck] NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set — " +
-          "App Check is disabled. Cloud Functions with enforceAppCheck=true " +
-          "will reject calls. Set the key in .env.local for local testing.",
-      );
-    }
+    console.warn(
+      "[AppCheck] NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set — " +
+        "App Check is DISABLED. Cloud Functions with enforceAppCheck=true " +
+        "WILL reject calls from this browser.",
+    );
     return;
   }
 
-  appCheckInstance = initializeAppCheck(getClientApp(), {
-    provider: new ReCaptchaEnterpriseProvider(siteKey),
-    isTokenAutoRefreshEnabled: true,
-  });
+  try {
+    appCheckInstance = initializeAppCheck(getClientApp(), {
+      provider: new ReCaptchaEnterpriseProvider(siteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+    console.info("[AppCheck] ✅ initializeAppCheck succeeded");
+  } catch (err) {
+    console.error("[AppCheck] ❌ initializeAppCheck FAILED:", err);
+    return;
+  }
+
+  appCheckReady = getToken(appCheckInstance, false)
+    .then((tokenResult) => {
+      console.info(
+        "[AppCheck] ✅ First token obtained (length=%d)",
+        tokenResult.token.length,
+      );
+    })
+    .catch((err) => {
+      console.error(
+        "[AppCheck] ❌ Failed to obtain first token — CF calls will " +
+          "be rejected if enforceAppCheck=true. Error:",
+        err,
+      );
+    });
 }
